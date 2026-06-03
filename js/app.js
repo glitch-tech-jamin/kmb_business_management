@@ -1,33 +1,19 @@
 const state = {
   customers: [],
   products: [],
-  invoices: []
+  invoices: [],
+  suppliers: []
 };
 
 const api = {
   customers: `${window.config?.SUPABASE_URL || ''}/rest/v1/customers`,
   products: `${window.config?.SUPABASE_URL || ''}/rest/v1/products`,
-  invoices: `${window.config?.SUPABASE_URL || ''}/rest/v1/invoices`
+  invoices: `${window.config?.SUPABASE_URL || ''}/rest/v1/invoices`,
+  suppliers: `${window.config?.SUPABASE_URL || ''}/rest/v1/suppliers`,
+  purchaseOrders: `${window.config?.SUPABASE_URL || ''}/rest/v1/purchase_orders`
 };
 
 const productMarkupPercent = 0.30;
-
-function calculateSuggestedSell(purchaseAmount, transportCost) {
-  const costTotal = Number(purchaseAmount || 0) + Number(transportCost || 0);
-  return Number((costTotal * (1 + productMarkupPercent)).toFixed(2));
-}
-
-function updateSellSuggestion() {
-  const purchase = parseFloat(document.querySelector('#product-purchase')?.value || '0');
-  const transport = parseFloat(document.querySelector('#product-transport')?.value || '0');
-  const suggested = calculateSuggestedSell(purchase, transport);
-  const suggestionEl = document.querySelector('#product-suggestion');
-  if (suggestionEl) {
-    suggestionEl.textContent = purchase > 0 || transport > 0
-      ? `Suggested sell price: ${formatCurrency(suggested)} (30% markup)`
-      : 'Enter purchase amount and transport cost to see a suggested sell price.';
-  }
-}
 
 function createHeaders() {
   return {
@@ -38,6 +24,7 @@ function createHeaders() {
 }
 
 async function fetchResources() {
+  await loadSuppliers();
   await Promise.all([loadCustomers(), loadProducts(), loadInvoices()]);
 }
 
@@ -56,77 +43,65 @@ async function loadCustomers() {
   `).join('');
 }
 
+async function loadSuppliers() {
+  const tableBody = document.querySelector('#supplier-table tbody');
+  const results = await fetchJson(api.suppliers + '?select=*');
+  state.suppliers = results || [];
+
+  if (tableBody) {
+    tableBody.innerHTML = state.suppliers.map(supplier => `
+      <tr>
+        <td>${escapeHtml(supplier.name)}</td>
+        <td>${escapeHtml(supplier.email || '')}</td>
+        <td>${escapeHtml(supplier.phone || '')}</td>
+        <td>${escapeHtml(supplier.address || '')}</td>
+      </tr>
+    `).join('');
+  }
+
+  populateSupplierSelect();
+}
+
+function populateSupplierSelect() {
+  const supplierSelect = document.querySelector('#product-supplier');
+  if (!supplierSelect) return;
+  supplierSelect.innerHTML = `
+    <option value="">Choose supplier</option>
+    ${state.suppliers.map(supplier => `
+      <option value="${supplier.id}">${escapeHtml(supplier.name)}</option>
+    `).join('')}
+  `;
+}
+
 async function loadProducts() {
   const tableBody = document.querySelector('#product-table tbody');
   if (!tableBody) return;
   const results = await fetchJson(api.products + '?select=*');
   state.products = results || [];
+
   tableBody.innerHTML = state.products.map(product => {
-    const descriptionText = escapeHtml(product.description || '');
-    const costMatch = /Cost total: \$?([0-9.,]+)/.exec(product.description || '');
-    const costTotal = costMatch ? formatCurrency(Number(costMatch[1].replace(/,/g, ''))) : '';
+    const supplier = state.suppliers.find(s => s.id === product.supplier_id);
+    const supplierName = supplier ? supplier.name : 'Unassigned';
+    const lowStock = Number(product.stock) <= Number(product.reorder_threshold);
+
     return `
       <tr data-product-id="${product.id}">
         <td>${escapeHtml(product.name)}</td>
-        <td>${descriptionText}</td>
-        <td>${costTotal}</td>
-        <td class="sell-price-cell">${formatCurrency(product.price)}</td>
-        <td><button class="edit-price-button" type="button">Edit price</button></td>
+        <td>${escapeHtml(product.category || '')}</td>
+        <td>${escapeHtml(product.stock?.toString() || '0')}</td>
+        <td>${escapeHtml(product.reorder_threshold?.toString() || '0')}</td>
+        <td>${escapeHtml(supplierName)}</td>
+        <td>${formatCurrency(product.price)}</td>
+        <td>${escapeHtml(product.sales_count?.toString() || '0')}</td>
+        <td>
+          <button class="record-sale-button" type="button">Record sale</button>
+          ${lowStock ? '<button class="order-more-button" type="button">Order more</button>' : ''}
+        </td>
       </tr>
     `;
   }).join('');
 
-  attachPriceEditors();
-}
-
-function attachPriceEditors() {
-  const buttons = document.querySelectorAll('.edit-price-button');
-  buttons.forEach(button => {
-    button.removeEventListener('click', handleEditPriceClick);
-    button.addEventListener('click', handleEditPriceClick);
-  });
-}
-
-function handleEditPriceClick(event) {
-  const button = event.currentTarget;
-  const row = button.closest('tr');
-  if (!row) return;
-  const productId = row.dataset.productId;
-  const priceCell = row.querySelector('.sell-price-cell');
-  if (!priceCell) return;
-  const currentPrice = parseFloat(priceCell.textContent.replace(/[^0-9.]/g, '')) || 0;
-  priceCell.innerHTML = `
-    <input class="sell-price-input" type="number" step="0.01" value="${currentPrice}">
-    <button class="save-price-button" type="button">Save</button>
-    <button class="cancel-price-button" type="button">Cancel</button>
-  `;
-
-  const saveButton = priceCell.querySelector('.save-price-button');
-  const cancelButton = priceCell.querySelector('.cancel-price-button');
-  saveButton?.addEventListener('click', () => saveUpdatedSellPrice(productId, priceCell));
-  cancelButton?.addEventListener('click', () => {
-    priceCell.textContent = formatCurrency(currentPrice);
-  });
-}
-
-async function saveUpdatedSellPrice(productId, priceCell) {
-  const input = priceCell.querySelector('.sell-price-input');
-  if (!input) return;
-  const newPrice = parseFloat(input.value || '0');
-  if (!newPrice || newPrice <= 0) {
-    showMessage('#product-message', 'Enter a valid sell price to save.');
-    return;
-  }
-  const response = await fetchJson(`${api.products}?id=eq.${encodeURIComponent(productId)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ price: newPrice })
-  });
-  if (response) {
-    showMessage('#product-message', 'Sell price updated.');
-    await loadProducts();
-  } else {
-    showMessage('#product-message', 'Unable to update sell price.');
-  }
+  attachProductButtons();
 }
 
 async function loadInvoices() {
@@ -198,12 +173,39 @@ async function addCustomer(event) {
   }
 }
 
+async function addSupplier(event) {
+  event.preventDefault();
+  const payload = {
+    name: document.querySelector('#supplier-name')?.value?.trim() || '',
+    email: document.querySelector('#supplier-email')?.value?.trim() || '',
+    phone: document.querySelector('#supplier-phone')?.value?.trim() || '',
+    address: document.querySelector('#supplier-address')?.value?.trim() || ''
+  };
+  if (!payload.name) {
+    showMessage('#supplier-message', 'Supplier name is required.');
+    return;
+  }
+  const created = await fetchJson(api.suppliers, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  if (created) {
+    showMessage('#supplier-message', 'Supplier added successfully.');
+    event.target.reset();
+    await loadSuppliers();
+  }
+}
+
 async function addProduct(event) {
   event.preventDefault();
   const name = document.querySelector('#product-name')?.value?.trim() || '';
   const description = document.querySelector('#product-description')?.value?.trim() || '';
+  const category = document.querySelector('#product-category')?.value?.trim() || 'Perfume';
+  const supplierId = document.querySelector('#product-supplier')?.value || null;
   const purchaseAmount = parseFloat(document.querySelector('#product-purchase')?.value || '0') || 0;
   const transportCost = parseFloat(document.querySelector('#product-transport')?.value || '0') || 0;
+  const stock = parseInt(document.querySelector('#product-stock')?.value || '0', 10) || 0;
+  const reorderThreshold = parseInt(document.querySelector('#product-reorder')?.value || '0', 10) || 0;
   const enteredPrice = parseFloat(document.querySelector('#product-price')?.value || '0') || 0;
 
   if (!name) {
@@ -211,7 +213,11 @@ async function addProduct(event) {
     return;
   }
   if (purchaseAmount <= 0) {
-    showMessage('#product-message', 'Initial purchase amount is required.');
+    showMessage('#product-message', 'Purchase amount is required.');
+    return;
+  }
+  if (stock < 0) {
+    showMessage('#product-message', 'Stock must be zero or more.');
     return;
   }
 
@@ -223,7 +229,11 @@ async function addProduct(event) {
   const payload = {
     name,
     description: combinedDescription,
-    price
+    category,
+    price,
+    stock,
+    reorder_threshold: reorderThreshold,
+    supplier_id: supplierId || null
   };
 
   const created = await fetchJson(api.products, {
@@ -231,22 +241,124 @@ async function addProduct(event) {
     body: JSON.stringify(payload)
   });
   if (created) {
-    showMessage('#product-message', `Product added at ${formatCurrency(price)}. Use Edit price to update later.`);
+    showMessage('#product-message', `Product added at ${formatCurrency(price)}. Use Record sale to update inventory later.`);
     event.target.reset();
     updateSellSuggestion();
     await loadProducts();
   }
 }
 
+function calculateSuggestedSell(purchaseAmount, transportCost) {
+  const costTotal = Number(purchaseAmount || 0) + Number(transportCost || 0);
+  return Number((costTotal * (1 + productMarkupPercent)).toFixed(2));
+}
+
+function updateSellSuggestion() {
+  const purchase = parseFloat(document.querySelector('#product-purchase')?.value || '0') || 0;
+  const transport = parseFloat(document.querySelector('#product-transport')?.value || '0') || 0;
+  const suggestionEl = document.querySelector('#product-suggestion');
+  if (!suggestionEl) return;
+  if (purchase > 0 || transport > 0) {
+    suggestionEl.textContent = `Suggested sell price: ${formatCurrency(calculateSuggestedSell(purchase, transport))} (30% markup)`;
+  } else {
+    suggestionEl.textContent = 'Enter purchase amount and transport cost to see a suggested sell price.';
+  }
+}
+
+function attachProductButtons() {
+  document.querySelectorAll('.record-sale-button').forEach(button => {
+    button.removeEventListener('click', handleRecordSaleClick);
+    button.addEventListener('click', handleRecordSaleClick);
+  });
+
+  document.querySelectorAll('.order-more-button').forEach(button => {
+    button.removeEventListener('click', handleOrderMoreClick);
+    button.addEventListener('click', handleOrderMoreClick);
+  });
+}
+
+function handleRecordSaleClick(event) {
+  const row = event.currentTarget.closest('tr');
+  if (!row) return;
+  const productId = row.dataset.productId;
+  recordSale(productId);
+}
+
+async function recordSale(productId) {
+  const product = state.products.find(p => p.id === productId);
+  if (!product) return;
+  const quantityText = prompt('Enter quantity sold', '1');
+  const quantity = parseInt(quantityText || '0', 10);
+  if (!quantity || quantity <= 0) {
+    showMessage('#product-message', 'Sale quantity must be a positive number.');
+    return;
+  }
+
+  const remainingStock = Math.max((Number(product.stock) || 0) - quantity, 0);
+  const updated = await fetchJson(`${api.products}?id=eq.${encodeURIComponent(productId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      stock: remainingStock,
+      sales_count: Number(product.sales_count || 0) + quantity
+    })
+  });
+
+  if (updated) {
+    showMessage('#product-message', `Recorded sale of ${quantity} item(s). Stock is now ${remainingStock}.`);
+    await loadProducts();
+  }
+}
+
+function handleOrderMoreClick(event) {
+  const row = event.currentTarget.closest('tr');
+  if (!row) return;
+  const productId = row.dataset.productId;
+  createPurchaseOrder(productId);
+}
+
+async function createPurchaseOrder(productId) {
+  const product = state.products.find(p => p.id === productId);
+  if (!product) return;
+
+  if (!product.supplier_id) {
+    showMessage('#product-message', 'Please assign a supplier to this product before ordering.');
+    return;
+  }
+
+  const quantity = Math.max(Number(product.reorder_threshold) || 1, 1);
+  const totalCost = Number((quantity * Number(product.price || 0)).toFixed(2));
+  const payload = {
+    supplier_id: product.supplier_id,
+    product_id: product.id,
+    quantity,
+    status: 'requested',
+    total_cost: totalCost
+  };
+
+  const created = await fetchJson(api.purchaseOrders, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+  if (created) {
+    showMessage('#product-message', `Purchase order submitted for ${quantity} more units from supplier.`);
+  }
+}
+
 function initRoutes() {
   const customerForm = document.querySelector('#customer-form');
   if (customerForm) customerForm.addEventListener('submit', addCustomer);
+
+  const supplierForm = document.querySelector('#supplier-form');
+  if (supplierForm) supplierForm.addEventListener('submit', addSupplier);
+
   const productForm = document.querySelector('#product-form');
   if (productForm) {
     productForm.addEventListener('submit', addProduct);
     document.querySelector('#product-purchase')?.addEventListener('input', updateSellSuggestion);
     document.querySelector('#product-transport')?.addEventListener('input', updateSellSuggestion);
   }
+
   updateSellSuggestion();
   fetchResources();
 }

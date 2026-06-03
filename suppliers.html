@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customers | KMB Business Management</title>
+  <title>Suppliers | KMB Business Management</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="config.js" defer></script>
   <script src="js/app.js" defer></script>
@@ -13,26 +13,26 @@
     <div class="logo">KMB Business Management</div>
     <nav>
       <a href="index.html">Home</a>
-      <a href="customers.html" class="active">Customers</a>
+      <a href="customers.html">Customers</a>
       <a href="products.html">Products</a>
-      <a href="suppliers.html">Suppliers</a>
+      <a href="suppliers.html" class="active">Suppliers</a>
       <a href="invoices.html">Invoices</a>
     </nav>
   </header>
 
   <main class="page-content">
     <section>
-      <h1>Customers</h1>
-      <form id="customer-form" class="form-row">
-        <input id="customer-name" placeholder="Name" required>
-        <input id="customer-email" type="email" placeholder="Email">
-        <input id="customer-phone" placeholder="Phone">
-        <input id="customer-address" placeholder="Address">
-        <button type="submit">Add Customer</button>
+      <h1>Suppliers</h1>
+      <form id="supplier-form" class="form-row">
+        <input id="supplier-name" placeholder="Supplier name" required>
+        <input id="supplier-email" type="email" placeholder="Email">
+        <input id="supplier-phone" placeholder="Phone">
+        <input id="supplier-address" placeholder="Address">
+        <button type="submit">Add Supplier</button>
       </form>
-      <div id="customer-message" class="message"></div>
+      <div id="supplier-message" class="message"></div>
       <div class="table-wrapper">
-        <table id="customer-table">
+        <table id="supplier-table">
           <thead>
             <tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th></tr>
           </thead>
