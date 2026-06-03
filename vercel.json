@@ -1,5 +1,16 @@
 {
   "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "docs/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/docs/$1" }
+  ]
+}
+{
+  "version": 2,
   "builds": [{ "src": "package.json", "use": "@vercel/next" }],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "@NEXT_PUBLIC_SUPABASE_URL",
