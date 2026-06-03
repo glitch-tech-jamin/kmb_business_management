@@ -95,9 +95,14 @@ Static DecSoft-ready UI
 
 A static version is available in `static-app/` for DecSoft App Builder or any static host.
 
-1. Copy `static-app/config.example.js` to `static-app/config.js`.
-2. Add your Supabase project URL and anon key.
-3. Open `static-app/index.html` in DecSoft or your browser.
-4. Deploy the contents of `static-app/` as a static site.
+1. Open `static-app/config.js` and replace the placeholder values with your Supabase project URL and anon key.
+2. Open `static-app/index.html` in your browser or import the folder into DecSoft.
+3. Deploy the contents of `static-app/` as a static site.
 
-The static app uses Supabase REST API calls and requires only the anon key. Do not commit `static-app/config.js`.
+The static app uses Supabase REST API calls and requires only the anon key.
+
+GitHub Pages Deployment
+
+- The included workflow `.github/workflows/pages.yml` publishes `static-app/` to the `gh-pages` branch on each push to `main`.
+- After the first push, enable GitHub Pages in repository settings and choose branch `gh-pages` with folder `/`.
+- The site will be served from `https://<your-org>.github.io/<your-repo>/`.
