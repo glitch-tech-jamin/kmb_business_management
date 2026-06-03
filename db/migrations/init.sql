@@ -22,12 +22,40 @@ CREATE TABLE IF NOT EXISTS employees (
   updated_at timestamptz DEFAULT now()
 );
 
+-- Suppliers
+CREATE TABLE IF NOT EXISTS suppliers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  email text,
+  phone text,
+  address text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 -- Products / Services
 CREATE TABLE IF NOT EXISTS products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   description text,
+  category text,
   price numeric(12,2) NOT NULL DEFAULT 0,
+  stock integer NOT NULL DEFAULT 0,
+  reorder_threshold integer NOT NULL DEFAULT 0,
+  supplier_id uuid REFERENCES suppliers(id) ON DELETE SET NULL,
+  sales_count integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Purchase orders
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  supplier_id uuid REFERENCES suppliers(id) ON DELETE SET NULL,
+  product_id uuid REFERENCES products(id) ON DELETE SET NULL,
+  quantity integer NOT NULL DEFAULT 0,
+  status text DEFAULT 'requested',
+  total_cost numeric(12,2) DEFAULT 0,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

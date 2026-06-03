@@ -101,6 +101,12 @@ A static version is available in `static-app/` for DecSoft App Builder or any st
 
 The static app uses Supabase REST API calls and requires only the anon key.
 
+New inventory features:
+- Add suppliers using `static-app/suppliers.html`.
+- Track stock, reorder thresholds, and supplier assignments in products.
+- Record sales to update stock and sales count for best-selling items.
+- Low-stock products can be ordered again from the assigned supplier.
+
 GitHub Pages Deployment
 
 - The included workflow `.github/workflows/pages.yml` publishes `static-app/` to the `gh-pages` branch on each push to `main`.
