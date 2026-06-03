@@ -23,20 +23,65 @@
   <main class="page-content">
     <section>
       <h1>Products</h1>
+      <div class="dashboard-row">
+        <div class="card alert-card">
+          <h2>Reorder alert</h2>
+          <p id="reorder-alert-text">Products with low stock will appear here when available.</p>
+        </div>
+      </div>
       <form id="product-form" class="form-row">
         <input id="product-name" placeholder="Product name" required>
-        <input id="product-description" placeholder="Description">
-        <input id="product-purchase" type="number" step="0.01" placeholder="Purchase amount" required>
+        <select id="product-type" required>
+          <option value="">Product type</option>
+          <option value="Perfume">Perfume</option>
+          <option value="Jersey">Jersey</option>
+          <option value="Cosmetics">Cosmetics</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Other">Other</option>
+        </select>
+        <input id="product-brand" placeholder="Brand">
+        <input id="product-category" placeholder="Category (e.g. Fragrance, Apparel, Electronics)">
+        <input id="product-season" placeholder="Season / collection">
+        <input id="product-volume" placeholder="Volume / size">
+        <input id="product-concentration" placeholder="Concentration (e.g. Eau de Parfum)">
+        <input id="product-team" placeholder="Team (for jerseys)">
+        <input id="product-size" placeholder="Size">
+        <input id="product-sleeve" placeholder="Sleeve type">
+        <input id="product-gender" placeholder="Gender">
+        <input id="product-model" placeholder="Model / style">
+        <input id="product-attributes" placeholder="Additional product attributes">
+        <select id="product-status">
+          <option value="active">Active</option>
+          <option value="seasonal">Seasonal</option>
+          <option value="discontinued">Discontinued</option>
+          <option value="backorder">Backorder</option>
+        </select>
+        <select id="product-supplier"></select>
+        <input id="product-purchase" type="number" step="0.01" placeholder="Purchase cost" required>
         <input id="product-transport" type="number" step="0.01" placeholder="Transport cost" required>
-        <input id="product-price" type="number" step="0.01" placeholder="Sell price (auto-calculated)" >
+        <input id="product-stock" type="number" step="1" placeholder="Initial stock" required>
+        <input id="product-reorder" type="number" step="1" placeholder="Reorder threshold" required>
+        <input id="product-price" type="number" step="0.01" placeholder="Selling price (auto-calculated)">
         <button type="submit">Add Product</button>
       </form>
+      <div id="product-cost-info" class="message"></div>
       <div id="product-suggestion" class="message"></div>
       <div id="product-message" class="message"></div>
       <div class="table-wrapper">
         <table id="product-table">
           <thead>
-            <tr><th>Name</th><th>Description</th><th>Cost total</th><th>Sell price</th><th>Actions</th></tr>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Brand</th>
+              <th>Supplier</th>
+              <th>Stock</th>
+              <th>Reorder</th>
+              <th>Sell price</th>
+              <th>Sell price (ZMW)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>

@@ -23,18 +23,47 @@
   <main class="page-content">
     <section>
       <h1>Suppliers</h1>
+      <div class="dashboard-row">
+        <div class="card">
+          <h2>Active suppliers</h2>
+          <p id="supplier-count">0</p>
+        </div>
+        <div class="card alert-card">
+          <h2>Low-stock products</h2>
+          <p id="low-stock-count">0</p>
+        </div>
+        <div class="card alert-card">
+          <h2>Supplier reorder status</h2>
+          <p id="supplier-reorder-status">No supplier reorder alerts.</p>
+        </div>
+        <div class="card">
+          <h2>Best-selling supplier</h2>
+          <p id="top-supplier">None yet</p>
+        </div>
+      </div>
+
       <form id="supplier-form" class="form-row">
         <input id="supplier-name" placeholder="Supplier name" required>
+        <input id="supplier-product-types" placeholder="Products supplied (comma-separated)">
+        <input id="supplier-country" placeholder="Country">
+        <select id="supplier-currency">
+          <option value="ZMW">ZMW</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="ZAR">ZAR</option>
+        </select>
         <input id="supplier-email" type="email" placeholder="Email">
         <input id="supplier-phone" placeholder="Phone">
         <input id="supplier-address" placeholder="Address">
         <button type="submit">Add Supplier</button>
       </form>
       <div id="supplier-message" class="message"></div>
+      <div id="supplier-alerts" class="message"></div>
       <div class="table-wrapper">
         <table id="supplier-table">
           <thead>
-            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th></tr>
+            <tr><th>Name</th><th>Product types</th><th>Country</th><th>Currency</th><th>Email</th><th>Phone</th><th>Address</th></tr>
           </thead>
           <tbody></tbody>
         </table>
