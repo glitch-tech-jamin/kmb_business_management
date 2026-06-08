@@ -9,11 +9,15 @@ Vercel deployment and serverless function setup
 - `SUPABASE_URL` = https://<your-project>.supabase.co
 - `SUPABASE_SERVICE_ROLE_KEY` = <your-service-role-key> (keep secret)
 - `PURCHASE_API_KEY` = <random-secret-for-api-access>
+- `ADMIN_PASSWORD` = <simple-admin-password-for-docs/admin.html>
+
+> Do not store secret values in `vercel.json`. Set them in the Vercel dashboard instead.
 
 3) How the serverless example works
 - The serverless endpoint is at `/api/create-purchase-order`.
-- It requires `x-api-key` header to match `PURCHASE_API_KEY`.
-- The function uses `SUPABASE_SERVICE_ROLE_KEY` to write to `purchase_orders` and `inventory_movements` securely.
+- The admin-only UI page is at `/admin.html` and calls `/api/admin-create-purchase-order` with `ADMIN_PASSWORD`.
+- It requires `x-api-key` header to match `PURCHASE_API_KEY` for the public purchase-order API.
+- The server-side admin endpoint uses `ADMIN_PASSWORD` and `SUPABASE_SERVICE_ROLE_KEY` to create purchase orders securely.
 
 4) Example curl call (from a secure server or admin UI):
 

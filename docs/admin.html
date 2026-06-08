@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | KMB Business Management</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="config.js" defer></script>
+  <script src="js/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">KMB Business Management</div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="customers.html">Customers</a>
+      <a href="products.html">Products</a>
+      <a href="suppliers.html">Suppliers</a>
+      <a href="invoices.html">Invoices</a>
+      <a href="admin.html" class="active">Admin</a>
+    </nav>
+  </header>
+
+  <main class="page-content">
+    <section>
+      <h1>Admin Panel</h1>
+      <p>Enter the admin password to unlock the admin page. This page can create purchase orders through the serverless endpoint on Vercel.</p>
+
+      <form id="admin-login-form" class="form-row">
+        <input id="admin-password" type="password" placeholder="Admin password" required>
+        <button type="submit">Unlock</button>
+      </form>
+
+      <div id="admin-login-message" class="message"></div>
+
+      <div id="admin-panel" class="admin-panel hidden">
+        <form id="admin-order-form" class="form-row">
+          <input id="admin-product-id" placeholder="Product ID" required>
+          <input id="admin-supplier-id" placeholder="Supplier ID">
+          <input id="admin-quantity" type="number" step="1" placeholder="Quantity" required>
+          <input id="admin-total-cost" type="number" step="0.01" placeholder="Total cost">
+          <button type="submit">Create Purchase Order</button>
+        </form>
+        <div id="admin-order-message" class="message"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">Static KMB app built for DecSoft.</footer>
+</body>
+</html>

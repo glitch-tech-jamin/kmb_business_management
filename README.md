@@ -101,6 +101,10 @@ A static version is available in `docs/` for DecSoft App Builder or any static h
 
 The static app uses Supabase REST API calls and requires only the anon key.
 
+Admin UI:
+- `docs/admin.html` provides a tiny admin-only page for creating purchase orders using a password.
+- It calls `/api/admin-create-purchase-order` on Vercel and keeps your service-role key on the server.
+
 New inventory features:
 - Add suppliers using `static-app/suppliers.html`.
 - Track stock, reorder thresholds, and supplier assignments in products.

@@ -148,10 +148,6 @@ button:hover {
   color: #0f172a;
 }
 
-.hidden {
-  display: none;
-}
-
 .small-note {
   font-size: 0.95rem;
   color: #475569;
