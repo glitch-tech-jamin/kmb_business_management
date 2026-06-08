@@ -2,7 +2,7 @@
 // Expecting POST JSON: { product_id: '<uuid>', quantity: <number> }
 // Require header: x-api-key: <PURCHASE_API_KEY> (set in Vercel env)
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
