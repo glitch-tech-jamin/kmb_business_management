@@ -9,9 +9,14 @@ export default function Login() {
 
   const handleMagicLink = async (e: any) => {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithOtp({ email })
-    if (error) setMessage(error.message)
-    else setMessage('Check your email for the sign-in link.')
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email })
+      if (error) setMessage(error.message)
+      else setMessage('Check your email for the sign-in link.')
+    } catch (err) {
+      console.error('Sign-in request failed', err)
+      setMessage(err instanceof Error ? err.message : 'Sign-in request failed. Please try again.')
+    }
   }
 
   return (
