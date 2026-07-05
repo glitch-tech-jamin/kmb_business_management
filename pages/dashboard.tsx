@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { supabase } from '../src/lib/supabaseClient'
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
-  const router = useRouter()
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -14,7 +13,7 @@ export default function Dashboard() {
     return () => authListener.subscription.unsubscribe()
   }, [])
 
-  if (!user) return <p style={{padding:40}}>Not signed in — go to <a href="/login">login</a>.</p>
+  if (!user) return <p style={{padding:40}}>Not signed in — go to <Link href="/login">login</Link>.</p>
 
   return (
     <main style={{padding:40}}>
