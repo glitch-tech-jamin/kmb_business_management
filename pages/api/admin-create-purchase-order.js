@@ -43,8 +43,8 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const detail = await response.text();
-      return res.status(502).json({ error: 'Failed to create purchase order', detail });
+      console.error('Supabase purchase_orders insert failed:', await response.text());
+      return res.status(502).json({ error: 'Failed to create purchase order' });
     }
 
     const data = await response.json();
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, purchase_order: order });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'internal_error', detail: String(err) });
+    console.error('admin-create-purchase-order error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

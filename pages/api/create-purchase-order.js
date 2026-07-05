@@ -44,8 +44,8 @@ export default async function handler(req, res) {
     });
 
     if (!poResp.ok) {
-      const txt = await poResp.text();
-      return res.status(502).json({ error: 'Supabase insert failed', detail: txt });
+      console.error('Supabase purchase_orders insert failed:', await poResp.text());
+      return res.status(502).json({ error: 'Failed to create purchase order' });
     }
 
     const created = await poResp.json();
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, purchase_order: po });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'internal_error', detail: String(err) });
+    console.error('create-purchase-order error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
