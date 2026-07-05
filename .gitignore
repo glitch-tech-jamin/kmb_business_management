@@ -26,3 +26,11 @@ node_modules
 
 # Test coverage
 coverage
+
+# Next.js
+.next
+next-env.d.ts
+
+# Local env files (never commit secrets)
+.env.local
+.env*.local

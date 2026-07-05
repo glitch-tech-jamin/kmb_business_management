@@ -7,11 +7,11 @@ export default function Dashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    const s = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
-    return () => s.subscription.unsubscribe()
+    return () => authListener.subscription.unsubscribe()
   }, [])
 
   if (!user) return <p style={{padding:40}}>Not signed in — go to <a href="/login">login</a>.</p>
