@@ -1,20 +1,11 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { supabaseAdmin } from '../../src/lib/supabaseServer'
+import { createCrudHandler } from '../../src/lib/apiHandler'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    const { data, error } = await supabaseAdmin.from('customers').select('*').order('created_at', { ascending: false })
-    if (error) return res.status(500).json({ error: error.message })
-    return res.status(200).json(data)
-  }
-
-  if (req.method === 'POST') {
-    const { name, email, phone, address } = req.body
-    const { data, error } = await supabaseAdmin.from('customers').insert([{ name, email, phone, address }]).select()
-    if (error) return res.status(500).json({ error: error.message })
-    return res.status(201).json(data?.[0])
-  }
-
-  res.setHeader('Allow', ['GET', 'POST'])
-  res.status(405).end(`Method ${req.method} Not Allowed`)
-}
+export default createCrudHandler({
+  table: 'customers',
+  getInsertPayload: (body) => ({
+    name: body.name,
+    email: body.email,
+    phone: body.phone,
+    address: body.address,
+  }),
+})
