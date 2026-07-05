@@ -10,7 +10,9 @@ export default function Dashboard() {
     const s = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
+    supabase.auth.getSession()
+      .then(({ data }) => setUser(data.session?.user ?? null))
+      .catch((err: unknown) => console.error('Failed to load session', err))
     return () => s.subscription.unsubscribe()
   }, [])
 

@@ -62,18 +62,29 @@ export default async function handler(req, res) {
       note: `Purchase order ${po.id} created via serverless function`
     };
 
-    await fetch(`${SUPABASE_URL}/rest/v1/inventory_movements`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: SERVICE_ROLE,
-        Authorization: `Bearer ${SERVICE_ROLE}`,
-        Prefer: 'return=representation'
-      },
-      body: JSON.stringify(movementPayload)
-    }).catch(() => {});
+    let movementWarning;
+    try {
+      const movementResp = await fetch(`${SUPABASE_URL}/rest/v1/inventory_movements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SERVICE_ROLE,
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify(movementPayload)
+      });
+      if (!movementResp.ok) {
+        const detail = await movementResp.text();
+        movementWarning = `Inventory movement was not recorded (${movementResp.status}): ${detail}`;
+        console.error(movementWarning);
+      }
+    } catch (movementErr) {
+      movementWarning = `Inventory movement request failed: ${String(movementErr)}`;
+      console.error(movementWarning);
+    }
 
-    return res.status(200).json({ ok: true, purchase_order: po });
+    return res.status(200).json({ ok: true, purchase_order: po, ...(movementWarning ? { warning: movementWarning } : {}) });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal_error', detail: String(err) });

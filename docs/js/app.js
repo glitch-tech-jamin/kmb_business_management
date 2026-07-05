@@ -46,7 +46,14 @@ async function fetchResources() {
 async function loadCustomers() {
   const tableBody = document.querySelector('#customer-table tbody');
   if (!tableBody) return;
-  const results = await fetchJson(api.customers + '?select=*');
+  let results;
+  try {
+    results = await fetchJson(api.customers + '?select=*');
+  } catch (error) {
+    console.error('Failed to load customers', error);
+    showMessage('#customer-message', `Failed to load customers: ${error.message}`);
+    return;
+  }
   state.customers = results || [];
   tableBody.innerHTML = state.customers.map(customer => `
     <tr>
@@ -60,7 +67,14 @@ async function loadCustomers() {
 
 async function loadSuppliers() {
   const tableBody = document.querySelector('#supplier-table tbody');
-  const results = await fetchJson(api.suppliers + '?select=*');
+  let results;
+  try {
+    results = await fetchJson(api.suppliers + '?select=*');
+  } catch (error) {
+    console.error('Failed to load suppliers', error);
+    showMessage('#supplier-message', `Failed to load suppliers: ${error.message}`);
+    return;
+  }
   state.suppliers = results || [];
 
   if (tableBody) {
@@ -95,7 +109,14 @@ function populateSupplierSelect() {
 async function loadProducts() {
   const tableBody = document.querySelector('#product-table tbody');
   if (!tableBody) return;
-  const results = await fetchJson(api.products + '?select=*');
+  let results;
+  try {
+    results = await fetchJson(api.products + '?select=*');
+  } catch (error) {
+    console.error('Failed to load products', error);
+    showMessage('#product-message', `Failed to load products: ${error.message}`);
+    return;
+  }
   state.products = results || [];
 
   const lowStockCount = state.products.filter(product => Number(product.stock || 0) <= Number(product.reorder_threshold || 0)).length;
@@ -134,8 +155,12 @@ async function loadProducts() {
 }
 
 async function loadPurchaseOrders() {
-  const results = await fetchJson(api.purchaseOrders + '?select=*');
-  state.purchaseOrders = results || [];
+  try {
+    const results = await fetchJson(api.purchaseOrders + '?select=*');
+    state.purchaseOrders = results || [];
+  } catch (error) {
+    console.error('Failed to load purchase orders', error);
+  }
 }
 
 function renderSupplierDashboard() {
@@ -180,16 +205,20 @@ async function addCustomer(event) {
     return;
   }
 
-  const created = await fetchJson(api.customers, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-
-  if (created) {
-    showMessage('#customer-message', 'Customer added successfully.');
-    event.target.reset();
-    await loadCustomers();
+  try {
+    await fetchJson(api.customers, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error('Failed to add customer', error);
+    showMessage('#customer-message', `Failed to add customer: ${error.message}`);
+    return;
   }
+
+  showMessage('#customer-message', 'Customer added successfully.');
+  event.target.reset();
+  await loadCustomers();
 }
 
 async function addSupplier(event) {
@@ -209,16 +238,20 @@ async function addSupplier(event) {
     return;
   }
 
-  const created = await fetchJson(api.suppliers, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-
-  if (created) {
-    showMessage('#supplier-message', 'Supplier added successfully.');
-    event.target.reset();
-    await loadSuppliers();
+  try {
+    await fetchJson(api.suppliers, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error('Failed to add supplier', error);
+    showMessage('#supplier-message', `Failed to add supplier: ${error.message}`);
+    return;
   }
+
+  showMessage('#supplier-message', 'Supplier added successfully.');
+  event.target.reset();
+  await loadSuppliers();
 }
 
 async function addProduct(event) {
@@ -307,17 +340,21 @@ async function addProduct(event) {
     }
   };
 
-  const created = await fetchJson(api.products, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-
-  if (created) {
-    showMessage('#product-message', `Product added at ${formatCurrency(price, productCurrency)} (${formatCurrency(priceZmw, 'ZMW')}).`);
-    event.target.reset();
-    updateSellSuggestion();
-    await loadProducts();
+  try {
+    await fetchJson(api.products, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error('Failed to add product', error);
+    showMessage('#product-message', `Failed to add product: ${error.message}`);
+    return;
   }
+
+  showMessage('#product-message', `Product added at ${formatCurrency(price, productCurrency)} (${formatCurrency(priceZmw, 'ZMW')}).`);
+  event.target.reset();
+  updateSellSuggestion();
+  await loadProducts();
 }
 
 function calculateSuggestedSell(purchaseAmount, transportCost) {
@@ -381,15 +418,22 @@ async function recordSale(productId) {
   }
 
   const remainingStock = Math.max((Number(product.stock) || 0) - quantity, 0);
-  const updated = await fetchJson(`${api.products}?id=eq.${encodeURIComponent(productId)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      stock: remainingStock,
-      sales_count: Number(product.sales_count || 0) + quantity
-    })
-  });
+  try {
+    await fetchJson(`${api.products}?id=eq.${encodeURIComponent(productId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        stock: remainingStock,
+        sales_count: Number(product.sales_count || 0) + quantity
+      })
+    });
+  } catch (error) {
+    console.error('Failed to record sale', error);
+    showMessage('#product-message', `Failed to record sale: ${error.message}`);
+    return;
+  }
 
-  if (updated) {
+  let movementWarning = '';
+  try {
     await recordInventoryMovement({
       product_id: product.id,
       movement_type: 'sale',
@@ -399,10 +443,14 @@ async function recordSale(productId) {
       related_order_id: null,
       note: `Sold ${quantity} units of ${product.name}`
     });
-    showMessage('#product-message', `Recorded sale of ${quantity} item(s). Stock is now ${remainingStock}.`);
-    await loadProducts();
-    renderSupplierDashboard();
+  } catch (error) {
+    console.error('Sale recorded but logging the inventory movement failed', error);
+    movementWarning = ' (warning: inventory movement was not logged)';
   }
+
+  showMessage('#product-message', `Recorded sale of ${quantity} item(s). Stock is now ${remainingStock}.${movementWarning}`);
+  await loadProducts();
+  renderSupplierDashboard();
 }
 
 function handleOrderMoreClick(event) {
@@ -424,21 +472,34 @@ async function createPurchaseOrder(productId) {
   const quantity = Math.max(Number(product.reorder_threshold) || 1, 1);
   const totalCost = Number((quantity * Number(product.price || 0)).toFixed(2));
 
-  const created = await fetchJson(api.purchaseOrders, {
-    method: 'POST',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({
-      supplier_id: product.supplier_id,
-      product_id: product.id,
-      quantity,
-      status: 'requested',
-      total_cost: totalCost,
-      shipping_status: 'pending'
-    })
-  });
+  let purchaseOrder;
+  try {
+    const created = await fetchJson(api.purchaseOrders, {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        supplier_id: product.supplier_id,
+        product_id: product.id,
+        quantity,
+        status: 'requested',
+        total_cost: totalCost,
+        shipping_status: 'pending'
+      })
+    });
+    purchaseOrder = Array.isArray(created) ? created[0] : created;
+  } catch (error) {
+    console.error('Failed to create purchase order', error);
+    showMessage('#product-message', `Unable to create purchase order: ${error.message}`);
+    return;
+  }
 
-  const purchaseOrder = Array.isArray(created) ? created[0] : created;
-  if (purchaseOrder && purchaseOrder.id) {
+  if (!purchaseOrder || !purchaseOrder.id) {
+    showMessage('#product-message', 'Unable to create purchase order: the server did not return an order id.');
+    return;
+  }
+
+  const warnings = [];
+  try {
     await recordInventoryMovement({
       product_id: product.id,
       movement_type: 'reorder',
@@ -448,13 +509,22 @@ async function createPurchaseOrder(productId) {
       related_order_id: purchaseOrder.id,
       note: `Purchase order created for ${quantity} units of ${product.name}`
     });
-    await createShippingRecord(purchaseOrder.id);
-    showMessage('#product-message', `Purchase order submitted for ${quantity} units from the supplier.`);
-    await loadPurchaseOrders();
-    renderSupplierDashboard();
-  } else {
-    showMessage('#product-message', 'Unable to create purchase order.');
+  } catch (error) {
+    console.error('Purchase order created but inventory movement logging failed', error);
+    warnings.push('inventory movement');
   }
+
+  try {
+    await createShippingRecord(purchaseOrder.id);
+  } catch (error) {
+    console.error('Purchase order created but shipping record creation failed', error);
+    warnings.push('shipping record');
+  }
+
+  const warningSuffix = warnings.length ? ` (warning: failed to create ${warnings.join(' and ')})` : '';
+  showMessage('#product-message', `Purchase order submitted for ${quantity} units from the supplier.${warningSuffix}`);
+  await loadPurchaseOrders();
+  renderSupplierDashboard();
 }
 
 async function recordInventoryMovement(payload) {
@@ -482,7 +552,14 @@ async function createShippingRecord(purchaseOrderId) {
 async function loadInvoices() {
   const tableBody = document.querySelector('#invoice-table tbody');
   if (!tableBody) return;
-  const results = await fetchJson(api.invoices + '?select=*');
+  let results;
+  try {
+    results = await fetchJson(api.invoices + '?select=*');
+  } catch (error) {
+    console.error('Failed to load invoices', error);
+    showMessage('#invoice-message', `Failed to load invoices: ${error.message}`);
+    return;
+  }
   state.invoices = results || [];
   tableBody.innerHTML = state.invoices.map(invoice => `
     <tr>
@@ -496,18 +573,36 @@ async function loadInvoices() {
 
 async function fetchJson(url, options = {}) {
   if (!window.config?.SUPABASE_URL || !window.config?.SUPABASE_ANON_KEY) {
-    return [];
+    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in config.js.');
   }
 
   const headers = { ...createHeaders(), ...(options.headers || {}) };
-  const response = await fetch(url, { headers, ...options });
 
-  if (!response.ok) {
-    console.warn('Fetch failed', response.status, response.statusText);
-    return [];
+  let response;
+  try {
+    response = await fetch(url, { headers, ...options });
+  } catch (networkError) {
+    throw new Error(`Network request failed: ${networkError.message}`);
   }
 
-  return response.json();
+  if (!response.ok) {
+    let detail = '';
+    try {
+      detail = (await response.text()).trim();
+    } catch {
+      /* ignore inability to read the error body */
+    }
+    throw new Error(`Request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ''}`);
+  }
+
+  // Some successful responses (e.g. 204, or POST/PATCH without a representation) have no body.
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Failed to parse the server response as JSON.');
+  }
 }
 
 function escapeHtml(text) {
